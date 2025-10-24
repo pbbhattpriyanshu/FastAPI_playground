@@ -1,6 +1,5 @@
-[
-  {
-    "Sn No": "P001",
+{
+  "P001": {
     "name": "Aarav Sharma",
     "city": "Delhi",
     "age": 28,
@@ -10,8 +9,7 @@
     "bmi": 23.5,
     "verdict": "Normal weight"
   },
-  {
-    "Sn No": "P002",
+  "P002": {
     "name": "Priya Verma",
     "city": "Mumbai",
     "age": 32,
@@ -21,8 +19,7 @@
     "bmi": 22.1,
     "verdict": "Normal weight"
   },
-  {
-    "Sn No": "P003",
+  "P003": {
     "name": "Rohan Das",
     "city": "Kolkata",
     "age": 40,
@@ -32,8 +29,7 @@
     "bmi": 30.1,
     "verdict": "Obese"
   },
-  {
-    "Sn No": "P004",
+  "P004": {
     "name": "Meera Iyer",
     "city": "Chennai",
     "age": 24,
@@ -43,8 +39,7 @@
     "bmi": 17.3,
     "verdict": "Underweight"
   },
-  {
-    "Sn No": "P005",
+  "P005": {
     "name": "Kabir Singh",
     "city": "Pune",
     "age": 36,
@@ -54,4 +49,4 @@
     "bmi": 27.8,
     "verdict": "Overweight"
   }
-]
+}
