@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path
+from fastapi import FastAPI, Path, HTTPException
 import json
 
 app = FastAPI()
@@ -16,6 +16,10 @@ async def read_root():
 async def read_about():
     return {"message": "A fully functional API for managing patients' data."}
 
+@app.get("/status")
+async def read_status():
+    return {"message": "There is no such booking, regarding this application"}
+
 @app.get("/view")
 async def view_data():
     data = load_data()
@@ -29,4 +33,4 @@ async def get_patient(patient_id: str = Path(..., description="The ID of the pat
     if patient_id in data:
         return {"patient": data[patient_id]}
     else:
-        return {"error": "Patient not found"}
+        raise HTTPException(status_code=404, detail="Patient not found")
