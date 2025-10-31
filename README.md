@@ -105,7 +105,7 @@ Interactive docs:
 1. Create and activate virtual environment
 ```powershell
 python -m venv myenv
-myenv\Scripts\activate
+.myenv\Scripts\activate
 ```
 
 2. Install minimal dependencies

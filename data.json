@@ -4,8 +4,8 @@
     "city": "Delhi",
     "age": 28,
     "gender": "Male",
-    "height_m": 1.75,
-    "weight_kg": 72.0,
+    "height": 1.75,
+    "weight": 72.0,
     "bmi": 23.5,
     "verdict": "Normal weight"
   },
@@ -14,8 +14,8 @@
     "city": "Mumbai",
     "age": 32,
     "gender": "Female",
-    "height_m": 1.62,
-    "weight_kg": 58.0,
+    "height": 1.62,
+    "weight": 58.0,
     "bmi": 22.1,
     "verdict": "Normal weight"
   },
@@ -24,8 +24,8 @@
     "city": "Kolkata",
     "age": 40,
     "gender": "Male",
-    "height_m": 1.68,
-    "weight_kg": 85.0,
+    "height": 1.68,
+    "weight": 85.0,
     "bmi": 30.1,
     "verdict": "Obese"
   },
@@ -34,8 +34,8 @@
     "city": "Chennai",
     "age": 24,
     "gender": "Female",
-    "height_m": 1.70,
-    "weight_kg": 50.0,
+    "height": 1.70,
+    "weight": 50.0,
     "bmi": 17.3,
     "verdict": "Underweight"
   },
@@ -44,8 +44,8 @@
     "city": "Pune",
     "age": 36,
     "gender": "Male",
-    "height_m": 1.80,
-    "weight_kg": 90.0,
+    "height": 1.80,
+    "weight": 90.0,
     "bmi": 27.8,
     "verdict": "Overweight"
   }
