@@ -1,176 +1,145 @@
 # Patient Management System — FastAPI
 
-A minimal learning project that implements a Patient Management System API using FastAPI. The project stores patient records in a local JSON file and demonstrates core FastAPI concepts: routing, request/response handling, simple persistence, and API documentation.
+A minimal learning project that implements a Patient Management System API using FastAPI. This system manages patient health records with BMI calculations and sorting capabilities.
 
 ## Table of contents
 - [Quick summary](#quick-summary)
-- [Architecture & flowcharts](#architecture--flowcharts)
-- [Features implemented](#features-implemented)
-- [Data model (current)](#data-model-current)
-- [API endpoints & examples](#api-endpoints--examples)
-- [Local setup (Windows)](#local-setup-windows)
-- [Development notes & next steps to learn FastAPI](#development-notes--next-steps)
-- [Testing & tooling](#testing--tooling)
+- [Features](#features)
+- [API Endpoints](#api-endpoints)
+- [Local setup](#local-setup)
+- [Project structure](#project-structure)
+- [Advanced usage](#advanced-usage)
+- [Development notes](#development-notes)
 
 ## Quick summary
-This mini project exposes a small REST API:
-- Read-only endpoints to list and fetch patients.
-- Data persisted in `data.json` as a mapping of patient IDs (e.g. `P001`) to patient objects.
-- Simple server implementation in `main.py`.
+REST API with these capabilities:
+- View all patient records
+- Retrieve individual patient data
+- Sort patients by health metrics
+- BMI-based health status tracking
 
-## Architecture & flowcharts
+## Features
+- JSON-based data persistence
+- Async request handling
+- Input validation
+- Sortable patient records
+- Error handling with proper HTTP status codes
+- Interactive API documentation
 
-Component diagram (Mermaid):
+## API Endpoints
 
-```mermaid
-graph TD
-  Client[Client (browser / curl / Postman)]
-  API[FastAPI app<br/>(main.py)]
-  Data[data.json]
-  UV[Uvicorn ASGI server]
-  Client -->|HTTP request| UV --> API
-  API -->|read/write| Data
-  API -->|openapi/docs| Client
+| Endpoint | Method | Description | Example |
+|----------|--------|-------------|---------|
+| `/` | GET | Welcome message | `curl http://127.0.0.1:8000/` |
+| `/about` | GET | API information | `curl http://127.0.0.1:8000/about` |
+| `/status` | GET | Application status | `curl http://127.0.0.1:8000/status` |
+| `/view` | GET | List all patients | `curl http://127.0.0.1:8000/view` |
+| `/patient/{id}` | GET | Get patient by ID | `curl http://127.0.0.1:8000/patient/P001` |
+| `/sort` | GET | Sort patients by metric | `curl "http://127.0.0.1:8000/sort?sort_by=height&order=desc"` |
+
+### Sorting Parameters
+The `/sort` endpoint accepts:
+- `sort_by`: 'height', 'weight', or 'bmi'
+- `order`: 'asc' or 'desc' (default: 'asc')
+
+## Local setup
+
+1. Clone and navigate to project
+```powershell
+git clone <repository-url>
+cd FastAPI_playground
 ```
 
-Sequence (request to view one patient):
-
-```mermaid
-sequenceDiagram
-  participant C as Client
-  participant U as Uvicorn
-  participant A as FastAPI
-  participant D as data.json
-  C->>U: GET /patient/P001
-  U->>A: route handler
-  A->>D: open and read data.json
-  D-->>A: patient object
-  A-->>U: JSON response
-  U-->>C: 200 OK + payload
-```
-
-## Features implemented
-- GET / — root message
-- GET /about — short description
-- GET /view — returns full `data.json`
-- GET /patient/{patient_id} — returns a single patient by ID
-- Simple JSON persistence (file-based)
-
-## Data model (current)
-The repository stores patients in `data.json`. Each patient ID maps to an object:
-
-Example entry (from data.json)
-```json
-"P001": {
-  "name": "Aarav Sharma",
-  "city": "Delhi",
-  "age": 28,
-  "gender": "Male",
-  "height_m": 1.75,
-  "weight_kg": 72.0,
-  "bmi": 23.5,
-  "verdict": "Normal weight"
-}
-```
-
-Notes:
-- Top-level structure is a map/dict keyed by patient id (string).
-- BMI and verdict are precomputed in the sample data.
-
-## API endpoints & examples
-
-1. Root
-- GET /
-- Example: curl http://127.0.0.1:8000/
-- Response: {"message": "Patients Mangement System API"}
-
-2. About
-- GET /about
-- Response: {"message":"A fully functional API for managing patients' data."}
-
-3. View all
-- GET /view
-- Returns entire JSON file as {"data": { ... }}
-
-4. Single patient
-- GET /patient/{patient_id}
-- Example: curl http://127.0.0.1:8000/patient/P001
-- Response (200): {"patient": { ... }} or {"error": "Patient not found"}
-
-Interactive docs:
-- Open http://127.0.0.1:8000/docs (Swagger UI)
-- Open http://127.0.0.1:8000/redoc (ReDoc)
-
-## Local setup (Windows)
-1. Create and activate virtual environment
+2. Set up virtual environment
 ```powershell
 python -m venv myenv
-.myenv\Scripts\activate
+.\myenv\Scripts\activate
 ```
 
-2. Install minimal dependencies
+3. Install dependencies
 ```powershell
 pip install fastapi uvicorn
 ```
 
-3. Run the server
+4. Start server
 ```powershell
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+uvicorn main:app --reload
 ```
 
-4. Test with curl (PowerShell):
-```powershell
-curl http://127.0.0.1:8000/patient/P001
+5. Access API:
+- API root: http://127.0.0.1:8000
+- Interactive docs: http://127.0.0.1:8000/docs
+- Alternative docs: http://127.0.0.1:8000/redoc
+
+## Project structure
+```
+FastAPI_playground/
+├── main.py           # FastAPI application
+├── data.json         # Patient database
+├── README.md         # Documentation
+└── myenv/           # Virtual environment
 ```
 
-## Development notes & next steps to learn FastAPI
-Recommended improvements for learning and building the app:
+## Advanced usage
 
-- Use Pydantic models
-  - Add request/response schemas in a `models.py` (validation, typing, examples).
-- Add create/update/delete endpoints (POST /patients, PUT /patient/{id}, DELETE /patient/{id}).
-- Move persistence behind a small service layer (functions to read/write) and lock file access if concurrent writes are possible.
-- Replace file persistence with a lightweight DB (SQLite + SQLModel or SQLAlchemy) as you advance.
-- Add request validation, errors using HTTPException and proper status codes.
-- Explore dependency injection, background tasks, CORS, and authentication (OAuth2 / JWT).
-- Add pagination & filtering for `/view`.
-
-Short code examples to get started:
-- Pydantic model skeleton
-```python
-from pydantic import BaseModel, Field
-from enum import Enum
-
-class Gender(str, Enum):
-    Male = "Male"
-    Female = "Female"
-
-class Patient(BaseModel):
-    name: str
-    city: str
-    age: int = Field(..., gt=0)
-    gender: Gender
-    height_m: float
-    weight_kg: float
+### Data Format
+Patient records follow this structure:
+```json
+{
+  "P001": {
+    "name": "Aarav Sharma",
+    "city": "Delhi",
+    "age": 28,
+    "gender": "Male",
+    "height": 1.75,
+    "weight": 72.0,
+    "bmi": 23.5,
+    "verdict": "Normal weight"
+  }
+}
 ```
 
-## Testing & tooling
-- Use pytest for unit tests.
-- Lint/format with flake8 / black / isort.
-- Add a requirements.txt for reproducible installs:
-```text
-fastapi
-uvicorn
-pytest
+### Sorting Examples
+1. Sort by height (ascending):
+```bash
+curl "http://127.0.0.1:8000/sort?sort_by=height&order=asc"
 ```
+
+2. Sort by BMI (descending):
+```bash
+curl "http://127.0.0.1:8000/sort?sort_by=bmi&order=desc"
+```
+
+## Development notes
+
+### Error handling
+The API implements proper error handling:
+- 404 for patient not found
+- 400 for invalid sort parameters
+- Detailed error messages in response
+
+### Future enhancements
+- Add POST/PUT/DELETE operations
+- Implement database storage
+- Add authentication
+- Add filtering capabilities
+- Implement pagination
 
 ## Troubleshooting
-- If the server can't read `data.json`: ensure working directory is project root and file encoding is UTF-8.
-- On Windows, activate the correct venv before running uvicorn.
-- If you add write endpoints, beware of concurrent write collisions — prefer a DB for real applications.
 
-## Suggested learning path (short)
-1. Pydantic models → 2. CRUD endpoints → 3. DB integration → 4. Authentication → 5. Tests & CI
+1. Server won't start:
+   - Ensure virtual environment is activated
+   - Verify all dependencies are installed
+   - Check port 8000 is available
 
-License: MIT
+2. Data not loading:
+   - Verify data.json exists in root directory
+   - Check file permissions
+   - Ensure JSON format is valid
+
+## License
+MIT License - Feel free to use and modify
+
+---
+Last updated: November 2025
 
