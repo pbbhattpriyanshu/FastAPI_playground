@@ -77,6 +77,8 @@ FastAPI_playground/
 ├── main.py           # FastAPI application
 ├── data.json         # Patient database
 ├── README.md         # Documentation
+├── concepts/         # Learning concepts and examples
+│   └── 1_pydantic_why.py  # Pydantic usage examples
 └── myenv/           # Virtual environment
 ```
 
@@ -142,4 +144,88 @@ MIT License - Feel free to use and modify
 
 ---
 Last updated: November 2025
+Version: 1.1.0
+
+## Learning Concepts
+
+### Why Pydantic?
+The `concepts` folder contains examples demonstrating important FastAPI concepts:
+
+1. Type Checking and Validation (`1_pydantic_why.py`):
+```python
+# Without Pydantic - Basic Python
+def insert_patient_data(name: str, age: int):
+    # Only type hints, no validation
+    pass
+
+# With Pydantic - Strong validation
+from pydantic import BaseModel
+
+class Patient(BaseModel):
+    name: str
+    age: int
+
+    # Automatic validation
+    # Type checking
+    # Better IDE support
+```
+
+### Key Benefits of Pydantic
+- Automatic data validation
+- Type checking at runtime
+- IDE support with autocompletion
+- Serialization/deserialization
+- Schema generation for API docs
+
+### Running Concept Examples
+```powershell
+# From project root
+python concepts/1_pydantic_why.py
+```
+
+## Code Examples
+
+### Basic Endpoint
+```python
+@app.get("/patient/{patient_id}")
+async def get_patient(patient_id: str):
+    data = load_data()
+    if patient_id in data:
+        return {"patient": data[patient_id]}
+    raise HTTPException(status_code=404)
+```
+
+### Data Validation
+```python
+from pydantic import BaseModel, Field
+
+class PatientBase(BaseModel):
+    name: str = Field(..., min_length=2)
+    age: int = Field(..., gt=0, lt=150)
+    height: float = Field(..., gt=0)
+    weight: float = Field(..., gt=0)
+```
+
+## Testing Examples
+
+### Using curl
+```bash
+# Get all patients
+curl http://127.0.0.1:8000/view
+
+# Get specific patient
+curl http://127.0.0.1:8000/patient/P001
+
+# Sort patients
+curl "http://127.0.0.1:8000/sort?sort_by=bmi&order=desc"
+```
+
+### Using Python requests
+```python
+import requests
+
+# Get patient data
+response = requests.get("http://127.0.0.1:8000/patient/P001")
+print(response.json())
+```
 
