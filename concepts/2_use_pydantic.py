@@ -1,11 +1,11 @@
-from pydantic import BaseModel, EmailStr, AnyUrl
+from pydantic import BaseModel, EmailStr, AnyUrl, Field
 from typing import List, Dict, Optional
 
 #defining Patient model
 class Patient(BaseModel):
-    name: str
-    age: int
-    weight: float
+    name: str = Field(..., min_length=2, max_length=50) #name must be between 2 and 50 characters
+    age: int = Field(..., ge=0, le=120, description="Age must be between 0 and 120") #age must be between 0 and 120
+    weight: float = Field(..., gt=0, description="Weight must be greater than zero") #weight must be positive
     allergies: List[str]
     isMarried: Optional[bool] = None #optional field
     isFamilyMember: bool = True #default value
