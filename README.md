@@ -109,6 +109,105 @@ Ensure keys and numeric fields are correct before running the app.
 - Allowed `order` values: `asc`, `desc`.
 - Returns sorted list of patient objects.
 
+### Strict Type Validation in Pydantic
+
+The `strict` parameter in Pydantic's Field helps prevent unwanted type coercion. This is particularly useful when you want to ensure exact type matches in your API.
+
+#### Why Use Strict Validation?
+- Prevents implicit type conversions
+- Catches potential data issues early
+- Ensures data integrity
+- Helps maintain consistent API behavior
+
+Example with strict validation:
+```python
+from pydantic import BaseModel, Field
+from typing import Annotated
+
+class PatientStrict(BaseModel):
+    # Without strict=True, "72.5" (string) would be accepted and converted to float
+    # With strict=True, only actual float values are accepted
+    weight: Annotated[float, Field(..., gt=0, strict=True)]
+    age: Annotated[int, Field(..., ge=0, le=120, strict=True)]
+
+# This will work:
+patient = PatientStrict(weight=72.5, age=25)
+
+# These will raise ValidationError:
+patient = PatientStrict(weight="72.5", age=25)  # String not allowed for weight
+patient = PatientStrict(weight=72.5, age="25")  # String not allowed for age
+```
+
+#### Comparison: Strict vs Non-Strict
+
+```python
+from pydantic import BaseModel, Field
+
+# Non-strict (default behavior)
+class PatientNonStrict(BaseModel):
+    weight: float = Field(gt=0)
+
+# This works (automatic conversion):
+p1 = PatientNonStrict(weight="72.5")  # Converts string to float
+
+# Strict validation
+class PatientStrict(BaseModel):
+    weight: float = Field(gt=0, strict=True)
+
+# This raises ValidationError:
+p2 = PatientStrict(weight="72.5")  # Error: string not allowed
+```
+
+Real-world example from our project:
+```python
+class Patient(BaseModel):
+    # Strict validation for numerical fields
+    weight: Annotated[float, Field(..., gt=0, strict=True, 
+        title='Enter the weight',
+        description="Weight must be greater than zero")]
+    
+    age: Annotated[int, Field(..., ge=0, le=120, strict=True,
+        description="Age must be between 0 and 120")]
+    
+    # Non-strict fields (allow reasonable coercion)
+    name: Annotated[str, Field(..., min_length=2, max_length=50)]
+    isMarried: Optional[bool] = None
+```
+
+#### When to Use Strict Validation
+
+1. Financial data:
+```python
+class Payment(BaseModel):
+    amount: Annotated[float, Field(..., gt=0, strict=True)]
+    currency: str
+```
+
+2. Medical measurements:
+```python
+class VitalSigns(BaseModel):
+    temperature: Annotated[float, Field(..., ge=35, le=42, strict=True)]
+    blood_pressure: Annotated[int, Field(..., ge=70, le=190, strict=True)]
+```
+
+3. Scientific calculations:
+```python
+class ExperimentData(BaseModel):
+    measurement: Annotated[float, Field(..., strict=True)]
+    timestamp: Annotated[int, Field(..., strict=True)]
+```
+
+#### Testing Strict Validation
+
+```python
+# Run this to test strict validation:
+try:
+    patient = Patient(weight="70.5", age=25)  # Should fail
+    print("Validation succeeded (unexpected)")
+except ValidationError as e:
+    print("Validation failed (expected):", e)
+```
+
 ## Learning Concepts
 
 This repository includes a `concepts/` folder with simple scripts to demonstrate Pydantic benefits:

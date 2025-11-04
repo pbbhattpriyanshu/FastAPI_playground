@@ -4,8 +4,8 @@ from typing import List, Dict, Optional, Annotated
 #defining Patient model
 class Patient(BaseModel):
     name: Annotated[str, Field(..., min_length=2, max_length=50, title='Name of the Patient', description='Give the name of the patient under 2 and 50 characters',  examples=['John Doe', 'Jane Smith'])]
-    age: int = Field(..., ge=0, le=120, description="Age must be between 0 and 120") #age must be between 0 and 120
-    weight: float = Field(..., gt=0, description="Weight must be greater than zero") #weight must be positive
+    age: int = Field(..., ge=0, le=120, description="Age must be between 0 and 120")
+    weight: Annotated[float, Field(..., gt=0, strict=True, title='Enter the weight', description="Weight must be greater than zero")]
     allergies: List[str]
     isMarried: Optional[bool] = None #optional field
     isFamilyMember: bool = True #default value
