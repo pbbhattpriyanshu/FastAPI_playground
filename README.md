@@ -80,7 +80,7 @@ FastAPI_playground/
 ├── README.md              # Project documentation (this file)
 ├── concepts/              # Learning examples (Pydantic demos)
 │   ├── 1_pydantic_why.py  # Why Pydantic (illustration)
-│   └── 2_use_pydantic.py  # Pydantic model usage + validation examples
+│   └── 2_use_pydantic.py  # Pydantic model usage + validation examples (uses Annotated)
 └── myenv/                 # (Optional) virtual environment
 ```
 
@@ -122,12 +122,56 @@ Why Pydantic (brief):
 - Integrates with FastAPI to auto-generate request/response schemas
 - Simplifies serialization/deserialization
 
-How to run concept scripts:
+### Annotated Types (typing.Annotated) — brief explanation and example
+
+What it is:
+- typing.Annotated lets you attach metadata to a type. Pydantic reads this metadata (commonly Field()) to apply validation and to enrich the OpenAPI schema.
+- Useful when you want to keep type + validation metadata together, and when you need rich per-field docs / examples in FastAPI.
+
+Why use it:
+- Cleaner field declarations for complex types
+- Attaches title/description/examples directly to the type annotation (improves generated API docs)
+- Works well with Pydantic v2 and FastAPI for clearer schemas
+
+Example (short):
+
+```python
+from typing import Annotated
+from pydantic import BaseModel, Field, EmailStr, AnyUrl
+
+class Patient(BaseModel):
+    # name is annotated with Field metadata — validation + docs
+    name: Annotated[str, Field(..., min_length=2, max_length=50, title="Patient name", description="Full name (2-50 chars)", examples=["John Doe"])]
+    age: int = Field(..., ge=0, le=120, description="Age in years")
+    weight: float = Field(..., gt=0, description="Weight in kg")
+    email: EmailStr
+    linkedIn: AnyUrl
+```
+
+Usage:
+
+```python
+# Valid data -> creates Patient instance
+p = Patient(
+    name="Rohit Kumar",
+    age=21,
+    weight=70.5,
+    email="rohit@example.com",
+    linkedIn="https://www.linkedin.com/in/rohit"
+)
+
+# Invalid data -> raises pydantic.ValidationError (e.g., name too short or invalid email)
+```
+
+Effect in FastAPI:
+- OpenAPI schema will include titles, descriptions and examples from Annotated Field metadata.
+- Validation happens automatically on request bodies using the same model.
+
+How to run the concept script:
 ```powershell
-# from project root
 python concepts\2_use_pydantic.py
 ```
-Expected: Pydantic will validate `patient_info` dictionaries and raise errors if a field is invalid or missing.
+You should see the printed validated patient data; invalid inputs raise ValidationError with details.
 
 ## Examples
 
@@ -153,10 +197,10 @@ print(r.json())
 3. Example Pydantic model (from `concepts/2_use_pydantic.py`) — brief snippet:
 ```python
 from pydantic import BaseModel, Field, EmailStr, AnyUrl
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Annotated
 
 class Patient(BaseModel):
-    name: str = Field(..., min_length=2, max_length=50)
+    name: Annotated[str, Field(..., min_length=2, max_length=50)]
     age: int = Field(..., ge=0, le=120)
     weight: float = Field(..., gt=0)
     allergies: List[str]
@@ -193,5 +237,5 @@ MIT — feel free to use and modify.
 
 ---
 Last updated: November 2025
-Version: 1.2.0
+Version: 1.3.0
 
