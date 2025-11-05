@@ -208,6 +208,151 @@ except ValidationError as e:
     print("Validation failed (expected):", e)
 ```
 
+### Field Validators in Pydantic — Complex Business Logic
+
+Field validators allow you to implement complex business rules and custom validation logic that goes beyond simple type checking and constraints.
+
+#### Why Use Field Validators?
+- Implement complex business rules
+- Perform cross-field validation
+- Transform input data
+- Validate against external systems/databases
+- Custom error messages for specific scenarios
+
+#### Basic Field Validator Example
+```python
+from pydantic import BaseModel, field_validator
+
+class Patient(BaseModel):
+    email: str
+    
+    @field_validator('email')
+    @classmethod
+    def validate_company_email(cls, value: str) -> str:
+        valid_domains = ['hdfc.com', 'icici.com']
+        domain = value.split('@')[-1]
+        
+        if domain not in valid_domains:
+            raise ValueError(f'Email must be from {valid_domains}')
+        return value
+
+# Usage:
+patient = Patient(email="john@hdfc.com")     # Valid
+patient = Patient(email="john@gmail.com")     # Raises ValidationError
+```
+
+#### Advanced Validation Examples
+
+1. Cross-field validation:
+```python
+class MedicalRecord(BaseModel):
+    systolic: int
+    diastolic: int
+    
+    @field_validator('diastolic')
+    @classmethod
+    def validate_blood_pressure(cls, diastolic: int, info) -> int:
+        systolic = info.data.get('systolic')
+        if systolic and diastolic >= systolic:
+            raise ValueError('Diastolic pressure must be lower than systolic')
+        return diastolic
+```
+
+2. Complex date validation:
+```python
+from datetime import date
+
+class Appointment(BaseModel):
+    appointment_date: date
+    
+    @field_validator('appointment_date')
+    @classmethod
+    def validate_future_date(cls, v: date) -> date:
+        if v <= date.today():
+            raise ValueError('Appointment must be in the future')
+        if v.weekday() >= 5:  # Weekend check
+            raise ValueError('No appointments on weekends')
+        return v
+```
+
+3. Data transformation:
+```python
+class PatientName(BaseModel):
+    full_name: str
+    
+    @field_validator('full_name')
+    @classmethod
+    def capitalize_name(cls, v: str) -> str:
+        return ' '.join(word.capitalize() for word in v.split())
+
+# Usage:
+patient = PatientName(full_name="john doe")  # Transforms to "John Doe"
+```
+
+#### Real-world Example from Our Project
+
+From `concepts/3_field_validator.py`:
+```python
+class Patient(BaseModel):
+    name: str
+    email: EmailStr
+    fees: float = 500.0  # default fee
+    
+    @field_validator('email')
+    @classmethod
+    def email_validator(cls, value: str) -> str:
+        valid_domains = ['hdfc.com', 'icici.com']
+        domain_name = value.split('@')[-1]
+        
+        if domain_name not in valid_domains:
+            raise ValueError('Not a valid corporate domain.')
+        return value
+
+# Test the validator:
+try:
+    patient = Patient(
+        name="Mayank",
+        email="mayank@hdfc.com"  # Valid
+    )
+    print("Valid patient:", patient)
+    
+    patient = Patient(
+        name="John",
+        email="john@gmail.com"  # Will raise ValidationError
+    )
+except ValidationError as e:
+    print("Validation failed:", e)
+```
+
+#### Best Practices for Field Validators
+
+1. Always use `@classmethod` decorator
+2. Provide clear error messages
+3. Handle edge cases (None, empty strings, etc.)
+4. Document the validation rules
+5. Use type hints for better IDE support
+
+```python
+class Patient(BaseModel):
+    age: int
+    
+    @field_validator('age')
+    @classmethod
+    def validate_adult_age(cls, v: int) -> int:
+        """
+        Validates that patient is an adult (18+)
+        Raises ValueError if age is < 18
+        """
+        if v < 18:
+            raise ValueError('Patient must be an adult (18+ years)')
+        return v
+```
+
+To run the field validator examples:
+```powershell
+python concepts\3_field_validator.py
+```
+
 ## Learning Concepts
 
 This repository includes a `concepts/` folder with simple scripts to demonstrate Pydantic benefits:
