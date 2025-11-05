@@ -26,3 +26,9 @@ class Patient(BaseModel):
         if domain_name not in valid_domains:
             raise ValueError('Not a valid domain.')
         return value
+
+
+#function to insert patient data
+def insert_patient_data(patient: Patient):
+    print(f"Inserting patient data: Name = {patient.name}, Age = {patient.age}, Weight = {patient.weight}, Allergies = {patient.allergies}, IsMarried = {patient.isMarried}, IsFamilyMember = {patient.isFamilyMember}, Email = {patient.email}, LinkedIn = {patient.linkedIn}, Contact Details = {patient.contact_details} , Fees = {patient.fees}")
+    print("Patient data inserted successfully.")
