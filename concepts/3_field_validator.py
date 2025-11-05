@@ -13,3 +13,16 @@ class Patient(BaseModel):
     linkedIn: AnyUrl
     contact_details: Dict[str, str]
     fees: float = 500.0 #default fee
+
+    # Custom validator for email field
+    @field_validator('email')
+    @classmethod
+    def email_validator(cls, value):
+
+        valid_domains = ['hdfc.com', 'icici.com']
+        #abc@gmail.com
+        domain_name = value.split('@')[-1]
+
+        if domain_name not in valid_domains:
+            raise ValueError('Not a valid domain.')
+        return value
