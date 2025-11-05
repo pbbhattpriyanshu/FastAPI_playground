@@ -25,7 +25,9 @@ class Patient(BaseModel):
 
         if domain_name not in valid_domains:
             raise ValueError('Not a valid domain.')
-        return value
+        else:
+            print('Valid email domain.')
+            return value
 
 
 #function to insert patient data
@@ -35,13 +37,20 @@ def insert_patient_data(patient: Patient):
 
 #creating patient instance
 patient_info = {
-    'name': 'rohit', 
-    'age': 21, 
-    'weight': 70.5, 
+    'name': 'Mayank', 
+    'age': 25, 
+    'weight': 90.5, 
     'isMarried': False, 
     'isFamilyMember': True, 
-    'allergies': ['pollen', 'nuts'], 
-    'email': 'rohit@example.com', 
-    'linkedIn': 'https://www.linkedin.com/in/rohit', 
+    'allergies': ['pollen', 'nuts', 'chicken pox'], 
+    'email': 'mayank@hdfc.com', 
+    'linkedIn': 'https://www.linkedin.com/in/mayank', 
     'contact_details': {'address': '542 A Mark Street Market, Near grandson Park', 'phone': '123-456-7890'},
-    'fees': 1580.00}
+    'fees': 4580.00}
+
+#validating and creating Patient object
+patient1 = Patient(**patient_info)
+
+
+#inserting patient data  
+insert_patient_data(patient1)
