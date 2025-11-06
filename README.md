@@ -353,6 +353,190 @@ To run the field validator examples:
 python concepts\3_field_validator.py
 ```
 
+### Field Validator Modes in Pydantic
+
+Field validators in Pydantic can run in two modes: 'before' and 'after'. The mode determines when the validator runs in relation to the basic parsing/validation.
+
+#### Mode Comparison
+- `mode='before'`: Runs before any parsing/validation
+- `mode='after'`: Runs after basic parsing/validation (default)
+
+#### Examples of Before vs After Validation
+
+```python
+from pydantic import BaseModel, field_validator
+from typing import List
+
+class Patient(BaseModel):
+    age: int
+    medications: List[str]
+
+    # Before mode - runs before type conversion
+    @field_validator('age', mode='before')
+    @classmethod
+    def validate_age_string(cls, value):
+        if isinstance(value, str) and value.endswith('y'):
+            # Convert "25y" to 25
+            return int(value.rstrip('y'))
+        return value
+
+    # After mode - runs after type conversion
+    @field_validator('age', mode='after')
+    @classmethod
+    def validate_age_range(cls, value: int) -> int:
+        if value < 0 or value > 120:
+            raise ValueError('Age must be between 0 and 120')
+        return value
+
+    # Before mode for list preprocessing
+    @field_validator('medications', mode='before')
+    @classmethod
+    def lowercase_medications(cls, values):
+        if isinstance(values, list):
+            return [v.lower() for v in values]
+        return values
+
+# Usage examples:
+try:
+    # Works with both string and integer ages
+    patient1 = Patient(age="25y", medications=["ASPIRIN", "INSULIN"])
+    print(patient1.model_dump())  
+    # Output: {'age': 25, 'medications': ['aspirin', 'insulin']}
+
+    patient2 = Patient(age=30, medications=["PARACETAMOL"])
+    print(patient2.model_dump())
+    # Output: {'age': 30, 'medications': ['paracetamol']}
+
+    # This will fail age validation
+    patient3 = Patient(age=150, medications=[])
+    # Raises ValueError: Age must be between 0 and 120
+except ValueError as e:
+    print(f"Validation error: {e}")
+```
+
+#### When to Use Each Mode
+
+Use `mode='before'`:
+- When you need to preprocess raw input data
+- For string formatting/cleaning before type conversion
+- To handle multiple input formats
+- For data normalization
+
+```python
+class MedicalRecord(BaseModel):
+    blood_pressure: str
+
+    @field_validator('blood_pressure', mode='before')
+    @classmethod
+    def normalize_bp_format(cls, value):
+        if isinstance(value, str):
+            # Convert "120/80" or "120-80" to standard format
+            return value.replace('-', '/')
+        return value
+```
+
+Use `mode='after'`:
+- For validation that requires the correct type
+- When checking value ranges
+- For business rule validation
+- When working with parsed data
+
+```python
+class Prescription(BaseModel):
+    dosage: float
+
+    @field_validator('dosage', mode='after')
+    @classmethod
+    def validate_safe_dosage(cls, value: float) -> float:
+        max_safe_dosage = 500.0
+        if value > max_safe_dosage:
+            raise ValueError(f'Dosage exceeds maximum safe limit of {max_safe_dosage}mg')
+        return value
+```
+
+#### Real-world Example Using Both Modes
+
+```python
+from datetime import datetime
+from pydantic import BaseModel, field_validator
+
+class Appointment(BaseModel):
+    date: datetime
+    patient_id: str
+
+    @field_validator('date', mode='before')
+    @classmethod
+    def parse_multiple_date_formats(cls, value):
+        if isinstance(value, str):
+            try:
+                # Try multiple date formats
+                for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y']:
+                    try:
+                        return datetime.strptime(value, fmt)
+                    except ValueError:
+                        continue
+                raise ValueError('Invalid date format')
+            except Exception as e:
+                raise ValueError(f'Date parsing error: {e}')
+        return value
+
+    @field_validator('date', mode='after')
+    @classmethod
+    def validate_future_date(cls, value: datetime) -> datetime:
+        if value < datetime.now():
+            raise ValueError('Appointment date must be in the future')
+        return value
+
+    @field_validator('patient_id', mode='before')
+    @classmethod
+    def normalize_patient_id(cls, value: str) -> str:
+        # Convert "P-123" or "P123" to standard "P123" format
+        return value.replace('-', '')
+
+# Usage example:
+appointment = Appointment(
+    date="2024-12-25",  # Accepts various formats
+    patient_id="P-123"   # Will be normalized to "P123"
+)
+```
+
+#### Best Practices for Using Modes
+
+1. Use `before` for:
+   - Input normalization
+   - Format standardization
+   - Type conversion
+   - Data cleaning
+
+2. Use `after` for:
+   - Business rules
+   - Range validation
+   - Relationship checks
+   - Final data validation
+
+3. Chain validators effectively:
+```python
+class Patient(BaseModel):
+    name: str
+
+    @field_validator('name', mode='before')
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        return value.strip().title()
+
+    @field_validator('name', mode='after')
+    @classmethod
+    def validate_name_length(cls, value: str) -> str:
+        if len(value) < 2:
+            raise ValueError('Name must be at least 2 characters long')
+        return value
+```
+
+To test these examples:
+```powershell
+python concepts\3_field_validator.py
+```
+
 ## Learning Concepts
 
 This repository includes a `concepts/` folder with simple scripts to demonstrate Pydantic benefits:
