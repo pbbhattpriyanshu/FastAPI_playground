@@ -15,7 +15,7 @@ class Patient(BaseModel):
     fees: float = 500.0 #default fee
 
     # Custom validator for email field
-    @field_validator('email')
+    @field_validator('email') #mode = 'after' by default
     @classmethod
     def email_validator(cls, value):
 
@@ -29,6 +29,14 @@ class Patient(BaseModel):
             print('Valid email domain.')
             return value
 
+    @field_validator('age', mode='after')
+    @classmethod
+    def age_validator(cls, value):
+        if 0 < value < 120:
+            print('Valid age')
+            return value
+        else:
+            raise ValueError('Age must be between 0 and 120.')
 
 #function to insert patient data
 def insert_patient_data(patient: Patient):
@@ -38,7 +46,7 @@ def insert_patient_data(patient: Patient):
 #creating patient instance
 patient_info = {
     'name': 'Mayank', 
-    'age': 25, 
+    'age': '25', 
     'weight': 90.5, 
     'isMarried': False, 
     'isFamilyMember': True, 
@@ -49,7 +57,7 @@ patient_info = {
     'fees': 4580.00}
 
 #validating and creating Patient object
-patient1 = Patient(**patient_info)
+patient1 = Patient(**patient_info)   #validation -> typecasting
 
 
 #inserting patient data  
