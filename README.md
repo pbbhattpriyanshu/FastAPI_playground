@@ -588,6 +588,92 @@ p = Patient(
     linkedIn="https://www.linkedin.com/in/rohit"
 )
 
+
+## Nested Models
+
+Nested models let you compose Pydantic models inside other models. This is useful for structured data (addresses, contacts, measurements) and keeps validation, documentation and serialization clean and reusable.
+
+Why use nested models
+- Encapsulate related fields (Address, Contact, Insurance)
+- Reuse models across endpoints
+- Automatic nested validation and clear OpenAPI schemas
+- Easier to access/serialize nested data in code
+
+Example (from concepts/6_nested_model.py):
+
+```python
+from pydantic import BaseModel
+
+class Address(BaseModel):
+    house_no: str
+    landmark: str
+    city: str
+    pincode: str
+    state: str
+
+class PatientInfo(BaseModel):
+    name: str
+    age: int
+    gender: str
+    address: Address
+
+# Create nested instances
+address = Address(
+    house_no="534 C",
+    landmark="Near Gamer Street Market",
+    city="Delhi",
+    pincode="110096",
+    state="Delhi"
+)
+
+patient = PatientInfo(
+    name="Pankaj",
+    age=19,
+    gender="Male",
+    address=address
+)
+
+print(patient)
+# Access nested field:
+print(patient.address.landmark)
+```
+
+FastAPI usage (request body example):
+
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Address(BaseModel):
+    house_no: str
+    city: str
+    pincode: str
+
+class PatientIn(BaseModel):
+    name: str
+    age: int
+    address: Address
+
+@app.post("/patients/")
+async def create_patient(payload: PatientIn):
+    # payload.address.city is already validated and available
+    return {"received": payload.model_dump()}
+```
+
+Notes and tips
+- OpenAPI docs will show Address as a nested schema under PatientIn.
+- Validation errors clearly indicate nested field issues (e.g., address.pincode).
+- You can mix nested models with lists: List[Address] for multiple addresses.
+- For partial updates use optional nested fields or separate update models.
+
+How to run the example
+```powershell
+python concepts\6_nested_model.py
+```
+
+
 # Invalid data -> raises pydantic.ValidationError (e.g., name too short or invalid email)
 ```
 
