@@ -1,8 +1,19 @@
 from fastapi import FastAPI, Path, HTTPException, Query
 import json
+from pydantic import BaseModel
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Creating patient data model
+class Patient(BaseModel):
+    id: str
+    name: str
+    city: str
+    age: int
+    gender: str
+    height: float
+    weight: float
 
 # Load data from JSON file
 def load_data():
@@ -61,3 +72,4 @@ def sort_patients(sort_by: str = Query(..., description="The field to sort patie
 
     return {"sorted_data": sorted_data}
 
+#
