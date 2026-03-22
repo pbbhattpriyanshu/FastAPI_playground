@@ -80,7 +80,12 @@ FastAPI_playground/
 ├── README.md              # Project documentation (this file)
 ├── concepts/              # Learning examples (Pydantic demos)
 │   ├── 1_pydantic_why.py  # Why Pydantic (illustration)
-│   └── 2_use_pydantic.py  # Pydantic model usage + validation examples (uses Annotated)
+│   ├── 2_use_pydantic.py  # Pydantic model usage + validation examples (uses Annotated)
+│   ├── 3_field_validator.py # Field-level validation examples
+│   ├── 4_model_validator.py # Model-level cross-field validation
+│   ├── 5_computed_fields.py # Dynamically computed fields
+│   ├── 6_nested_model.py  # Nested models examples
+│   └── 7_serialization.py # Data serialization and deserialization
 └── myenv/                 # (Optional) virtual environment
 ```
 
@@ -543,6 +548,11 @@ This repository includes a `concepts/` folder with simple scripts to demonstrate
 
 - `1_pydantic_why.py` — shows why Python type hints alone are insufficient for runtime validation.
 - `2_use_pydantic.py` — defines a Pydantic `Patient` model, validates sample data, and prints the validated instance.
+- `3_field_validator.py` — demonstrates custom field-level validation and complex business logic.
+- `4_model_validator.py` — demonstrates model-level validation for cross-field dependencies.
+- `5_computed_fields.py` — demonstrates dynamically computed fields.
+- `6_nested_model.py` — demonstrates handling complex nested structured models.
+- `7_serialization.py` — demonstrates serialization and deserialization of models using JSON.
 
 Why Pydantic (brief):
 - Validates data at runtime (types, ranges, formats)
@@ -588,6 +598,67 @@ p = Patient(
     linkedIn="https://www.linkedin.com/in/rohit"
 )
 
+# Invalid data -> raises pydantic.ValidationError (e.g., name too short or invalid email)
+```
+
+Effect in FastAPI:
+- OpenAPI schema will include titles, descriptions and examples from Annotated Field metadata.
+- Validation happens automatically on request bodies using the same model.
+
+How to run the concept script:
+```powershell
+python concepts\2_use_pydantic.py
+```
+You should see the printed validated patient data; invalid inputs raise ValidationError with details.
+
+## Model Validators
+
+Model validators in Pydantic allow you to validate across multiple fields at once. This is essential for cross-field validation where the validity of one field depends on the value of another.
+
+Example (from `concepts/4_model_validator.py`):
+
+```python
+from pydantic import BaseModel, model_validator
+
+class Patient(BaseModel):
+    age: int
+    contact_details: dict
+
+    @model_validator(mode='after')
+    def validate_emergency_contact(cls, model):
+        if model.age > 60 and 'emergency' not in model.contact_details:
+            raise ValueError('Emergency contact is required for patients over 60 years old.')
+        return model
+```
+
+How to run the example
+```powershell
+python concepts\4_model_validator.py
+```
+
+## Computed Fields
+
+Computed fields let you dynamically compute properties of your model, which will then be included in the serialized output or when generating the JSON schema.
+
+Example (from `concepts/5_computed_fields.py`):
+
+```python
+from pydantic import BaseModel, computed_field
+
+class Patient(BaseModel):
+    height: float
+    weight: float
+
+    @computed_field
+    @property
+    def bmi(self) -> float:
+        return round((self.weight / self.height**2), 2)
+```
+
+How to run the example
+```powershell
+python concepts\5_computed_fields.py
+```
 
 ## Nested Models
 
@@ -673,19 +744,26 @@ How to run the example
 python concepts\6_nested_model.py
 ```
 
+## Serialization
 
-# Invalid data -> raises pydantic.ValidationError (e.g., name too short or invalid email)
+Serialization allows you to convert Pydantic models back into dictionaries or JSON strings. You can conditionally `include` or `exclude` certain fields during serialization.
+
+Example (from `concepts/7_serialization.py`):
+
+```python
+# Printing serialized JSON data
+print(patient1.model_dump_json())
+
+# Deserializing with include filters
+# include only specific fields within nested models
+temp1 = patient1.model_dump(include={'address': {'city'}})
+print(temp1)
 ```
 
-Effect in FastAPI:
-- OpenAPI schema will include titles, descriptions and examples from Annotated Field metadata.
-- Validation happens automatically on request bodies using the same model.
-
-How to run the concept script:
+How to run the example
 ```powershell
-python concepts\2_use_pydantic.py
+python concepts\7_serialization.py
 ```
-You should see the printed validated patient data; invalid inputs raise ValidationError with details.
 
 ## Examples
 
