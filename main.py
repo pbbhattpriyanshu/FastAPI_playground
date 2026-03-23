@@ -1,26 +1,50 @@
 # Packages/Dependencies
 from fastapi import FastAPI, Path, HTTPException, Query
+from fastapi.responses import JSONResponse
 import json
-from pydantic import BaseModel
-
+from pydantic import BaseModel, computed_field, Field
+from typing import Annotated, Literal
 # Initialize FastAPI app
 app = FastAPI()
 
 # Creating patient data model
 class Patient(BaseModel):
-    id: str
-    name: str
-    city: str
-    age: int
-    gender: str
-    height: float
-    weight: float
+    id: Annotated[str, Field(..., description="The ID of the patient to retrieve", examples= ["P001"])]
+    name: Annotated[str, Field(..., min_length=2, max_length=50, description="The name of the patient", examples= ["John Doe", "Jane Smith"])]
+    city: Annotated[str, Field(..., min_length=2, max_length=50, description="The city of the patient", examples= ["New York", "Los Angeles"])]
+    age: Annotated[int, Field(..., ge=0, le=120, description="The age of the patient", examples= [25, 30])]
+    gender: Annotated[str, Field(..., min_length=2, max_length=50, description="The gender of the patient", examples= ["Male", "Female"])]
+    height: Annotated[float, Field(..., gt=0, le=10, description="The height of the patient", examples= [5.5, 6.0])]
+    weight: Annotated[float, Field(..., gt=0, le=1000, description="The weight of the patient", examples= [150, 200])]
+
+    @computed_field
+    @property
+    def bmi(self) -> float: 
+        bmi = round(self.weight / (self.height ** 2), 2)
+        return bmi
+
+    @computed_field
+    @property
+    def verdict(self) -> str:
+        if self.bmi < 18.5:
+            return "Underweight"
+        elif self.bmi < 25:
+            return "Normal weight"
+        elif self.bmi < 30:
+            return "Overweight"
+        else:
+            return "Obesity"
 
 # Load data from JSON file
 def load_data():
     with open('data.json', 'r') as file:
         data = json.load(file)
     return data
+
+# Save data from model to JSON file
+def save_data(data):
+    with open('data.json', 'w') as file:
+        json.dump(data, file)
 
 # Define API endpoints
 @app.get("/")
@@ -72,3 +96,21 @@ def sort_patients(sort_by: str = Query(..., description="The field to sort patie
     sorted_data = sorted(data.values(), key=lambda x: x.get(sort_by, 0), reverse=reverse)
 
     return {"sorted_data": sorted_data}
+
+
+# Create new patient endpoint
+@app.post("/create")
+def create_patient(patient: Patient):
+    #load data
+    data = load_data()
+
+    #check if patient already exists
+    if patient.id in data:
+        raise HTTPException(status_code=400, detail="Patient already exists")
+
+    #add patient data
+    data[patient.id] = patient.model_dump(exclude=['id'])
+    
+    #save data
+    save_data(data)
+    return JSONResponse(status_code=201, content={"message": "Patient added successfully"})
