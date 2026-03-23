@@ -1,3 +1,4 @@
+# Packages/Dependencies
 from fastapi import FastAPI, Path, HTTPException, Query
 import json
 from pydantic import BaseModel
@@ -44,7 +45,7 @@ async def view_data():
 
 # Get patient by ID endpoint
 @app.get("/patient/{patient_id}")
-async def get_patient(patient_id: str = Path(..., description="The ID of the patient to retrieve", example= "P001")):
+async def get_patient(patient_id: str = Path(..., description="The ID of the patient to retrieve", examples= ["P001"])):
     # Load data from JSON file
     data = load_data()
 
@@ -71,5 +72,3 @@ def sort_patients(sort_by: str = Query(..., description="The field to sort patie
     sorted_data = sorted(data.values(), key=lambda x: x.get(sort_by, 0), reverse=reverse)
 
     return {"sorted_data": sorted_data}
-
-#
