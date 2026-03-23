@@ -3,7 +3,23 @@ from fastapi import FastAPI, Path, HTTPException, Query
 from fastapi.responses import JSONResponse
 import json
 from pydantic import BaseModel, computed_field, Field
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
+
+# --- Utility functions ---
+def calculate_bmi(weight: float, height: float) -> float:
+    """Calculate BMI from weight (kg) and height (m)."""
+    return round(weight / (height ** 2), 2)
+
+def get_verdict(bmi: float) -> str:
+    """Return weight category based on BMI."""
+    if bmi < 18.5:
+        return "Underweight"
+    elif bmi < 25:
+        return "Normal weight"
+    elif bmi < 30:
+        return "Overweight"
+    else:
+        return "Obesity"
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -15,26 +31,27 @@ class Patient(BaseModel):
     city: Annotated[str, Field(..., min_length=2, max_length=50, description="The city of the patient", examples= ["New York", "Los Angeles"])]
     age: Annotated[int, Field(..., ge=0, le=120, description="The age of the patient", examples= [25, 30])]
     gender: Annotated[str, Field(..., min_length=2, max_length=50, description="The gender of the patient", examples= ["Male", "Female"])]
-    height: Annotated[float, Field(..., gt=0, le=10, description="The height of the patient", examples= [5.5, 6.0])]
+    height: Annotated[float, Field(..., gt=0, le=2.5, description="The height of the patient in meters", examples= [5.5, 6.0])]
     weight: Annotated[float, Field(..., gt=0, le=1000, description="The weight of the patient", examples= [150, 200])]
 
     @computed_field
     @property
-    def bmi(self) -> float: 
-        bmi = round(self.weight / (self.height ** 2), 2)
-        return bmi
+    def bmi(self) -> float:
+        return calculate_bmi(self.weight, self.height)
 
     @computed_field
     @property
     def verdict(self) -> str:
-        if self.bmi < 18.5:
-            return "Underweight"
-        elif self.bmi < 25:
-            return "Normal weight"
-        elif self.bmi < 30:
-            return "Overweight"
-        else:
-            return "Obesity"
+        return get_verdict(self.bmi)
+
+# Creating update patient data model
+class PatientUpdate(BaseModel):
+    name: Annotated[Optional[str], Field(default=None, min_length=2, max_length=50, description="The name of the patient", examples= ["John Doe", "Jane Smith"])]
+    city: Annotated[Optional[str], Field(default=None, min_length=2, max_length=50, description="The city of the patient", examples= ["New York", "Los Angeles"])]
+    age: Annotated[Optional[int], Field(default=None, ge=0, le=120, description="The age of the patient", examples= [25, 30])]
+    gender: Annotated[Optional[str], Field(default=None, min_length=2, max_length=50, description="The gender of the patient", examples= ["Male", "Female"])]
+    height: Annotated[Optional[float], Field(default=None, gt=0, le=2.5, description="The height of the patient in meters", examples= [5.5, 6.0])]
+    weight: Annotated[Optional[float], Field(default=None, gt=0, le=1000, description="The weight of the patient", examples= [150, 200])]
 
 # Load data from JSON file
 def load_data():
@@ -117,4 +134,28 @@ def create_patient(patient: Patient):
     return JSONResponse(status_code=201, content={"message": "Patient added successfully"})
 
 # Update patient data endpoint
-# fixing issue
+@app.put("/update/{patient_id}")
+def update_patient(patient_id: str, patient_update: PatientUpdate):
+    #load data
+    data = load_data()
+
+    #check if patient exists
+    if patient_id not in data:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    #update patient data
+    patient_data = data[patient_id]
+    for field, value in patient_update.model_dump().items():
+        if value is not None:
+            patient_data[field] = value
+
+    # Recalculate bmi and verdict after update
+    height = patient_data.get('height')
+    weight = patient_data.get('weight')
+    if height and weight:
+        patient_data['bmi'] = calculate_bmi(weight, height)
+        patient_data['verdict'] = get_verdict(patient_data['bmi'])
+
+    #save data
+    save_data(data)
+    return JSONResponse(status_code=200, content={"message": "Patient updated successfully"})
