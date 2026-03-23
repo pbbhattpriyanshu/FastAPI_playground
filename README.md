@@ -18,15 +18,18 @@ A minimal learning project that implements a Patient Management System API using
 ## Quick summary
 REST API with these capabilities:
 - View all patient records
-- Retrieve individual patient data
+- Retrieve individual patient data by ID
+- Create, update, and delete patient records
 - Sort patients by health metrics
-- BMI-based health status tracking
+- Automatic BMI calculation and health verdict on create/update
 - Small concept examples showing why and how to use Pydantic
 
 ## Features
-- JSON-based data persistence (data.json)
+- Full CRUD operations via REST endpoints
+- JSON-based data persistence (`data.json`)
 - Async request handling with FastAPI
-- Input validation ideas (Pydantic examples in `concepts/`)
+- Centralised BMI logic via utility functions (`calculate_bmi`, `get_verdict`)
+- Height validated in **meters** only (`gt=0, le=2.5`) to prevent accidental feet input
 - Sortable patient records via query params
 - Error handling with HTTP status codes
 - Interactive API docs (Swagger / ReDoc)
@@ -34,19 +37,37 @@ REST API with these capabilities:
 ## API Endpoints
 
 | Endpoint | Method | Description |
-|---|---:|---|
+|---|:---:|---|
 | `/` | GET | Welcome message |
 | `/about` | GET | API information |
 | `/status` | GET | Application status |
-| `/view` | GET | List all patients (returns complete data.json) |
-| `/patient/{id}` | GET | Get patient by ID (e.g. P001) |
-| `/sort` | GET | Sort patients: query params `sort_by` = height|weight|bmi, `order` = asc|desc |
+| `/view` | GET | List all patients |
+| `/patient/{id}` | GET | Get patient by ID (e.g. `P001`) |
+| `/sort` | GET | Sort patients — query params: `sort_by` = `height`\|`weight`\|`bmi`, `order` = `asc`\|`desc` |
+| `/create` | POST | Create a new patient record |
+| `/update/{id}` | PUT | Partially update an existing patient (BMI auto-recalculated) |
+| `/delete/{id}` | DELETE | Delete a patient record |
 
 Examples:
-- GET root: `curl http://127.0.0.1:8000/`
-- GET patient: `curl http://127.0.0.1:8000/patient/P001`
-- Sort by BMI desc:
-  `curl "http://127.0.0.1:8000/sort?sort_by=bmi&order=desc"`
+```powershell
+# GET endpoints
+curl http://127.0.0.1:8000/
+curl http://127.0.0.1:8000/patient/P001
+curl "http://127.0.0.1:8000/sort?sort_by=bmi&order=desc"
+
+# Create a patient
+curl -X POST http://127.0.0.1:8000/create `
+  -H "Content-Type: application/json" `
+  -d '{"id":"P007","name":"Alice Roy","city":"Delhi","age":29,"gender":"Female","height":1.65,"weight":60}'
+
+# Update a patient (only send fields you want to change)
+curl -X PUT http://127.0.0.1:8000/update/P007 `
+  -H "Content-Type: application/json" `
+  -d '{"weight":65}'
+
+# Delete a patient
+curl -X DELETE http://127.0.0.1:8000/delete/P007
+```
 
 Interactive docs:
 - Swagger UI: http://127.0.0.1:8000/docs
@@ -75,8 +96,13 @@ Interactive docs:
 ## Project structure
 ```
 FastAPI_playground/
-├── main.py                # FastAPI application (endpoints described above)
-├── data.json              # Patient database (JSON file)
+├── main.py                # FastAPI application — all endpoints and models
+│   ├── calculate_bmi()    #   Utility: BMI formula (single source of truth)
+│   ├── get_verdict()      #   Utility: BMI → weight category label
+│   ├── Patient            #   Pydantic model for creating patients
+│   ├── PatientUpdate      #   Pydantic model for partial updates (all fields optional)
+│   └── Endpoints          #   GET/POST/PUT/DELETE routes
+├── data.json              # Patient database (JSON file, auto-updated by API)
 ├── README.md              # Project documentation (this file)
 ├── concepts/              # Learning examples (Pydantic demos)
 │   ├── 1_pydantic_why.py  # Why Pydantic (illustration)
@@ -86,7 +112,7 @@ FastAPI_playground/
 │   ├── 5_computed_fields.py # Dynamically computed fields
 │   ├── 6_nested_model.py  # Nested models examples
 │   └── 7_serialization.py # Data serialization and deserialization
-└── myenv/                 # (Optional) virtual environment
+└── venv/                  # Virtual environment
 ```
 
 ## Advanced usage
@@ -102,12 +128,27 @@ Patient records in `data.json` follow the shape:
     "gender": "Male",
     "height": 1.75,
     "weight": 72.0,
-    "bmi": 23.5,
+    "bmi": 23.51,
     "verdict": "Normal weight"
   }
 }
 ```
-Ensure keys and numeric fields are correct before running the app.
+> **Note:** `bmi` and `verdict` are computed automatically — do not edit them manually. Height must be in **meters** (valid range: `0 < height ≤ 2.5`).
+
+### BMI utility functions
+BMI logic lives in two standalone functions at the top of `main.py`, shared by both the `Patient` model and the update endpoint:
+
+```python
+def calculate_bmi(weight: float, height: float) -> float:
+    """BMI = weight(kg) / height(m)²  — rounded to 2 decimal places."""
+    return round(weight / (height ** 2), 2)
+
+def get_verdict(bmi: float) -> str:
+    """Underweight < 18.5 | Normal weight < 25 | Overweight < 30 | Obesity ≥ 30"""
+    ...
+```
+
+This ensures a **single source of truth** — changing the BMI formula or thresholds in one place affects both create and update flows.
 
 ### Sorting details
 - Allowed `sort_by` values: `height`, `weight`, `bmi`.
@@ -775,15 +816,44 @@ curl http://127.0.0.1:8000/view
 # Get a specific patient
 curl http://127.0.0.1:8000/patient/P002
 
-# Sort patients
-curl "http://127.0.0.1:8000/sort?sort_by=height&order=desc"
+# Sort patients by BMI descending
+curl "http://127.0.0.1:8000/sort?sort_by=bmi&order=desc"
+
+# Create a new patient
+curl -X POST http://127.0.0.1:8000/create `
+  -H "Content-Type: application/json" `
+  -d '{"id":"P007","name":"Alice Roy","city":"Delhi","age":29,"gender":"Female","height":1.65,"weight":60}'
+
+# Update only weight (BMI auto-recalculated)
+curl -X PUT http://127.0.0.1:8000/update/P007 `
+  -H "Content-Type: application/json" `
+  -d '{"weight":65}'
+
+# Delete a patient
+curl -X DELETE http://127.0.0.1:8000/delete/P007
 ```
 
 2. Using Python requests:
 ```python
 import requests
+
+# GET
 r = requests.get("http://127.0.0.1:8000/patient/P003")
 print(r.json())
+
+# POST — create
+payload = {"id": "P007", "name": "Alice Roy", "city": "Delhi",
+           "age": 29, "gender": "Female", "height": 1.65, "weight": 60}
+r = requests.post("http://127.0.0.1:8000/create", json=payload)
+print(r.json())  # {'message': 'Patient added successfully'}
+
+# PUT — partial update
+r = requests.put("http://127.0.0.1:8000/update/P007", json={"weight": 65})
+print(r.json())  # {'message': 'Patient updated successfully'}
+
+# DELETE
+r = requests.delete("http://127.0.0.1:8000/delete/P007")
+print(r.json())  # {'message': 'Patient deleted successfully'}
 ```
 
 3. Example Pydantic model (from `concepts/2_use_pydantic.py`) — brief snippet:
