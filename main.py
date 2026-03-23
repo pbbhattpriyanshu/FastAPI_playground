@@ -31,8 +31,8 @@ class Patient(BaseModel):
     city: Annotated[str, Field(..., min_length=2, max_length=50, description="The city of the patient", examples= ["New York", "Los Angeles"])]
     age: Annotated[int, Field(..., ge=0, le=120, description="The age of the patient", examples= [25, 30])]
     gender: Annotated[str, Field(..., min_length=2, max_length=50, description="The gender of the patient", examples= ["Male", "Female"])]
-    height: Annotated[float, Field(..., gt=0, le=2.5, description="The height of the patient in meters", examples= [5.5, 6.0])]
-    weight: Annotated[float, Field(..., gt=0, le=1000, description="The weight of the patient", examples= [150, 200])]
+    height: Annotated[float, Field(..., gt=0, le=2.5, description="The height of the patient in meters", examples= [1.6, 1.7])]
+    weight: Annotated[float, Field(..., gt=0, le=1000, description="The weight of the patient", examples= [50, 60])]
 
     @computed_field
     @property
