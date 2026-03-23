@@ -114,3 +114,5 @@ def create_patient(patient: Patient):
     #save data
     save_data(data)
     return JSONResponse(status_code=201, content={"message": "Patient added successfully"})
+
+# Update patient data endpoint
